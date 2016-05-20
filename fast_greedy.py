@@ -4,10 +4,6 @@
 import sys
 import copy
 
-data = []
-for line in sys.stdin:
-    v1,v2 = line.strip().split("\t")
-    data.append((v1,v2))
 """Fast greedy algorithm for community detection in complex network.
 
 Input edges information, one per line, output group id and vertice.
