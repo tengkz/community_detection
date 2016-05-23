@@ -2,7 +2,7 @@
 #coding:utf-8
 
 # Copyright 2016 Netease Inc. All Rights Reserved.
-# Author: hztengkezhen@corp.netease.com
+# Author: tengkz@163.com
 
 """Fast greedy algorithm for community detection in complex network analysis.
 
