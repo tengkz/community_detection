@@ -1,22 +1,36 @@
 #!/usr/bin/python
 #coding:utf-8
 
+# Copyright 2016 Netease Inc. All Rights Reserved.
+# Author: hztengkezhen@corp.netease.com
+
+"""Fast greedy algorithm for community detection in complex network analysis.
+
+Input edges information, output group id and vertice.
+Refs: Clauset, A., Newman, M. E., & Moore, C. (2004). Finding community structure in very large networks. Physical review E, 70(6), 066111.
+
+Input format:
+    data: edges information, v1 and v2, one per line, sep by TAB.
+
+Output:
+    ret: group id and vertice id, sep by TAB.
+"""
+
 import sys
 import copy
 
-"""Fast greedy algorithm for community detection in complex network.
-
-Input edges information, one per line, output group id and vertice.
-Refs: Finding community structure in very large networks. Newman, 2004.
-
-Input format:
-    data: edges information, a_id and b_id, one per line, sep by TAB.
-
-Output:
-    ret: list of group id and vertice.
-"""
-
 def fast_greedy(data):
+    """Fast greedy algorithm implementation.
+
+    Attention:
+    	To avoid underflow, we have Q = sum_(i,j)(m2-degree[vi]*degree[vj]).
+
+    Args:
+        data: List of edges, v1 and v2, one per line, sep by TAB.
+
+    Returns:
+        List of result, group id and vertice id, one per line, sep by TAB.
+    """
 
     #community attribute
     com_v = []
@@ -37,40 +51,51 @@ def fast_greedy(data):
 
     #initialize
     for v1,v2 in data:
+        #store degree of vertices
         ver_degree[v1] = ver_degree.get(v1,0)+1
         ver_degree[v2] = ver_degree.get(v2,0)+1
+	#store astription of edges
         edge_com[(v1,v2)] = -1
 
-    index = 0
-    for v in ver_degree.keys():
+    for (index,v) in enumerate(ver_degree.keys()):
+        #initialize astription of vertices
         ver_com[v] = index
+	#initial vertices of community
         com_v.append(set([v]))
+	#initial Q value of community
         com_Q.append(0)
-        index += 1
 
+    #main loop
     while True:
+        #no extra edges any more
         if len(data) == 0:
             break
-        maxQ = -1000000
+        maxQ = -999999
         maxIndex = -1
+	#iterate over remaining edges
+	#find the one with highest delta Q
         for index,(v1,v2) in enumerate(data):
             com1 = ver_com[v1]
             com2 = ver_com[v2]
             new_e = set()
             tmpQ = 0
-            #edges between com1 and com2 are new
+            #edges between com1 and com2 are all fresh
             #in the combined community
             for vlast1 in com_v[com1]:
                 for vlast2 in com_v[com2]:
+		    #edge exists
                     if (vlast1,vlast2) in edge_com or (vlast2,vlast1) in edge_com:
                         tmpQ += m2-ver_degree[vlast1]*ver_degree[vlast2]
+		    #edge not exists
                     else:
                         tmpQ += -ver_degree[vlast1]*ver_degree[vlast2]
             if tmpQ > maxQ:
                 maxQ = tmpQ
                 maxIndex = index
-        if maxQ == -1000000:
+	#for too big network, where degree[v1]*degree[v2]>999999
+        if maxQ == -999999:
             break
+
         #combine com1 and com2
         v1,v2 = data[maxIndex]
         com1 = ver_com[v1]
@@ -84,19 +109,24 @@ def fast_greedy(data):
         com_v[com1] = com_v[com1].union(com_v[com2])
         com_Q[com1] = com_Q[com1]+com_Q[com2]+maxQ
         com_Q[com2] = 0
+        for tmpv in com_v[com2]:
+            ver_com[tmpv] = com1
+        com_v[com2].clear()
+
+	#record info of community with biggest Q
         Q+=maxQ
         if Q > QQ_max:
             QQ_max = Q
             COM_v_max = copy.deepcopy(com_v)
-        for tmpv in com_v[com2]:
-            ver_com[tmpv] = com1
-        com_v[com2].clear()
+
+	#delete edges between com1 and com2 from data
         datacopy = []
         for v1,v2 in data:
             if edge_com[(v1,v2)] == -1:
                 datacopy.append((v1,v2))
         data = datacopy
 
+    #result
     index = 0
     ret = []
     for community in COM_v_max:
